@@ -4,7 +4,6 @@ from tkinter import ttk, messagebox, colorchooser
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 import random, time, csv, datetime, os
 from datetime import datetime, timedelta
-from xml.dom.minidom import Notation
 
 timerRunning = None
 filepath = "dummyTimes.csv" #Dummy file for default times
@@ -651,4 +650,5 @@ def timer_page():
 scramble, timer = Scramble(), Timer()
 
 timerWindow = timer_page()
+
 timerWindow.mainloop()
