@@ -2,7 +2,7 @@
 from tkinter import *
 from tkinter import ttk, messagebox, colorchooser
 from tkinter.filedialog import askopenfilename, asksaveasfilename
-import random, time, csv, datetime, os
+import random, time, csv, datetime
 from datetime import datetime, timedelta
 
 timerRunning = None
@@ -181,11 +181,17 @@ class Timer():
         except FileNotFoundError:
             messagebox.showerror("Error!", "Cannot find file!")
     
+    def reload_file(self):
+        with open(filepath, "r") as file:
+            reader = csv.reader(file)
+            self.timerList = list(reader)
+    
     #Created with assistance to convert into specific time format
     def timeData(self, stringTime):
         try:
-            part = stringTime.split(":") #splits times more than 1 minute based on its separateor
-            total = 0
+            part = stringTime.split(":") #splits times more than 1 minute based on its separator
+            total = hour = mins = 0
+            seconds = 0.0
             
             #Converts the time format whether "HH:MM:SS.MS" or "MM:SS.MS"
             if len(part) == 3:
@@ -228,24 +234,25 @@ class Timer():
     def calculateMean(self):
         self.total, self.did_not_finish_counter = 0.0, 0
         self.validTimes = []
-        
-        with open(filepath, "r") as file:
-            reader = csv.reader(file)
-            self.timerList = list(reader)
-            
+    
         for item in self.timerList:
-            if item[0] != "DNF" and len(item[0]) >= 8:
-                self.total += self.timeData(item[0]).total_seconds()
-                self.validTimes.append(item[0])
-
-            elif item[0] != "DNF" and len(item[0]) < 8:
-                self.total += float(item[0])
+            if item[0] != "DNF":
+                if ":" in item[0]:
+                    self.total += self.timeData(item[0]).total_seconds()
+                
+                else:
+                    self.total += float(item[0])
+                
                 self.validTimes.append(item[0])
             
             else:
                 self.did_not_finish_counter += 1
         
-        self.best_and_worst_times()
+        best_times = self.best_and_worst_times()
+        
+        #Not the best way but retrieves all the times as a string which will fail but its safe
+        bestTime.config(text = "Best: " + str(best_times[1]))
+        worstTime.config(text = "Worst: " + str(best_times[0]))
         validity = (len(self.timerList) - self.did_not_finish_counter)
         
         if validity == 0:
@@ -253,14 +260,11 @@ class Timer():
         
         else:
             return self.total / validity
-
+        
+    #Calculating the Standard Deviation based on the number of solves per session
     def calcuate_standard_deviation(self, mean):
         self.total = 0.0
         self.validTimes = []
-        
-        with open(filepath, "r") as file:
-            reader = csv.reader(file)
-            self.timerList = list(reader)
         
         for item in self.timerList:
             if item[0] != "DNF":
@@ -274,44 +278,45 @@ class Timer():
         
         for item in self.validTimes:
             self.total += item ** 2
+            
+        variance = ((self.total / len(self.validTimes)) - (mean ** 2))
         
-        return ((self.total / len(self.validTimes)) - (mean ** 2)) ** 0.5
+        if variance <= 0:
+            return float(max(variance, 0))
+        
+        else:
+            return max(variance, 0) ** 0.5
     
     #Used for calculating averages whilst extracting best and worst time (used with assistance and works perfectly)
     def calculate_average(self, number):
         self.total = 0.0
         self.validTimes = []
-
-        with open(filepath, "r") as file:
-            reader = csv.reader(file)
-            self.timerList = list(reader)
             
-            selectedItems = self.timerList[-number:] #uses spllicing to identify how many pieces of data is required
+        selectedItems = self.timerList[-number:] #uses spllicing to identify how many pieces of data is required
 
-            #Assistance in cleaning the program for readability
-            for item in selectedItems:
-                if item[0] != "DNF":
-                    if ":" in item[0]: #Used for any instances of ":" to convert into a specific format or into decimal point
-                        seconds = self.timeData(item[0]).total_seconds()
-                    
-                    else:
-                        seconds = float(item[0])
-                    
-                    self.total += seconds
-                    self.validTimes.append(seconds)
+        #Assistance in cleaning the program for readability
+        for item in selectedItems:
+            if item[0] != "DNF":
+                if ":" in item[0]: #Used for any instances of ":" to convert into a specific format or into decimal point
+                    seconds = self.timeData(item[0]).total_seconds()
+                
+                else:
+                    seconds = float(item[0])
+                
+                self.validTimes.append(seconds)
 
-            best_worst_times = self.best_and_worst_times()
-            
-            self.validTimes = [float(time) for time in self.validTimes if time not in best_worst_times] #appends times not included in best or worst time
-            self.total = sum(self.validTimes)
-            
-            validity = len(self.validTimes)
+        best_worst_times = self.best_and_worst_times()
+        
+        self.validTimes = [time for time in self.validTimes if time not in best_worst_times] #appends times not included in best or worst time
+        self.total = sum(self.validTimes)
+        
+        validity = len(self.validTimes)
 
-            if validity == 0:
-                return 0
+        if validity == 0:
+            return 0
 
-            else:
-                return self.total / validity
+        else:
+            return self.total / validity
         
     #Created with Assistance for conversion
     def convert_stat_time(self, stat_type):
@@ -383,8 +388,6 @@ class Timer():
     def best_and_worst_times(self):
         if self.validTimes:
             maximum, minimum = max(self.validTimes), min(self.validTimes) #uses keywords max and min to indicate maximum and minimum
-            bestTime.config(text = "Best: " + str(minimum))
-            worstTime.config(text = "Worst: " + str(maximum))
             return maximum, minimum
         
         if len(self.validTimes) <= 4:
@@ -461,9 +464,7 @@ def refreshScreen(currentWindow, sameWindow):
     sameWindow()
     
     #Created with assistance
-    with open(filepath, "r") as file:
-        reader = csv.reader(file)
-        timer.timerList = list(reader)
+    timer.reload_file()
 
 #Displays the font if the user is interested to know the kind of font that the user is currently using
 def showFont(scramble, timer, stat):
@@ -472,32 +473,33 @@ def showFont(scramble, timer, stat):
 #Used to save a session into a file for later use
 def saveSession():
     global filepath
-    filepath = asksaveasfilename(defaultextension="csv", filetypes=[("CSV Files", ".csv"), ("All Files", "*.*")])
+    temp_file = asksaveasfilename(defaultextension="csv", filetypes=[("CSV Files", ".csv"), ("All Files", "*.*")])
     
-    if not filepath:
+    if not temp_file:
         return
     
-    else:
-        with open(filepath, "w", newline="") as file:
-            writer = csv.writer(file)
-            
-            # Iterate over each row in the Treeview
-            for item in table.get_children():  # Get each row (item) ID
-                value = table.item(item, "values")  # Retrieve the row's values
-                writer.writerow(value)  # Write values to the CSV file
+    filepath = temp_file
+    with open(filepath, "w", newline="") as file:
+        writer = csv.writer(file)
+        
+        # Iterate over each row in the Treeview
+        for item in table.get_children():  # Get each row (item) ID
+            value = table.item(item, "values")  # Retrieve the row's values
+            writer.writerow(value)  # Write values to the CSV file
 
 #Loads any existing file within the specified filepath
 def loadSession():
     global filepath
     count = 0
-    filepath = askopenfilename(filetypes=[("CSV Files", ".csv"), ("All Files", "*.*")])
+    temp_file = askopenfilename(filetypes=[("CSV Files", ".csv"), ("All Files", "*.*")])
     
-    if not filepath:
+    if not temp_file:
         return
     
     table.delete(*table.get_children())
 
-    filepath = os.path.basename(filepath) #finds the base of the file
+    filepath = temp_file #finds the base of the file
+    timer.reload_file()
     
     with open(filepath, "r", newline = "") as file:
         reader = csv.reader(file)
@@ -510,6 +512,8 @@ def loadSession():
                 count += 1
 
     timer.update_mean_time()
+    timer.update_average_time(5)
+    timer.update_average_time(12)
         
 #Creates the Rules and Regulation Pages for using the timer and how to use the system, uses a list of text and adding a new line per rule with a confirmation button
 def rule_page():
@@ -650,5 +654,4 @@ def timer_page():
 scramble, timer = Scramble(), Timer()
 
 timerWindow = timer_page()
-
 timerWindow.mainloop()
