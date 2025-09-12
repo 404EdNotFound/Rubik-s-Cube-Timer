@@ -261,8 +261,8 @@ class Timer():
         else:
             return self.total / validity
         
-    #Calculating the Standard Deviation based on the number of solves per session
-    def calcuate_standard_deviation(self, mean):
+       #Calculating the Standard Deviation based on the number of solves per session
+    def calcuate_standard_deviation(self):
         self.total = 0.0
         self.validTimes = []
         
@@ -276,16 +276,11 @@ class Timer():
                 
                 self.validTimes.append(seconds)
         
-        for item in self.validTimes:
-            self.total += item ** 2
-            
-        variance = ((self.total / len(self.validTimes)) - (mean ** 2))
-        
-        if variance <= 0:
-            return float(max(variance, 0))
+        if len(self.validTimes) <= 1:
+            return 0.0
         
         else:
-            return max(variance, 0) ** 0.5
+            return statistics.stdev(self.validTimes) #quicker approach of using standard deviation
     
     #Used for calculating averages whilst extracting best and worst time (used with assistance and works perfectly)
     def calculate_average(self, number):
@@ -655,3 +650,4 @@ scramble, timer = Scramble(), Timer()
 
 timerWindow = timer_page()
 timerWindow.mainloop()
+
