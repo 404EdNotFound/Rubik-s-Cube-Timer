@@ -2,12 +2,13 @@
 from tkinter import *
 from tkinter import ttk, messagebox, colorchooser
 from tkinter.filedialog import askopenfilename, asksaveasfilename
-import random, time, csv, datetime
+import random, time, csv, datetime, statistics
 from datetime import datetime, timedelta
 
 timerRunning = None
 filepath = "dummyTimes.csv" #Dummy file for default times
 
+#Clears the entire file before loading
 with open(filepath, "w") as file:
     file.write("")
 
@@ -16,7 +17,7 @@ FONTS = ["Agency FB", "Algerian", "Arial", "Arial Black", "Arial Narrow", "Arial
 
 #Scramble Class defined for setting the scramble based on the puzzle that is used here
 class Scramble():
-    #defined outside so that can be used with many objects (also used for WCA Puzzles)
+    #Defined outside so that can be used with many objects (also used for WCA Puzzles)
     NOTATION = ["F", "L", "U", "D", "B", "R", "F'", "L'", "U'", "D'", "B'", "R'", "F2", "D2", "U2", "B2", "L2", "R2"]
     WIDE_NOTATION = ["Fw", "Uw", "Lw", "Dw", "Rw", "Bw", "Fw'", "Uw'", "Lw'", "Dw'", "Rw'", "Bw'", "Fw2", "Uw2", "Lw2", "Dw2", "Rw2", "Bw2"]
     PYRA_NOTATION = ["U", "B", "R", "L", "U'", "B'", "R'", "L'", "u", "b", "r", "l", "u'", "b'", "r'", "l'"]
@@ -34,6 +35,7 @@ class Scramble():
         self.choice = None
         self.lengthValue = 0
     
+    #Choice of Scrambles
     def scrambleGenerator(self, length, choice, puzzleType):
         self.scrambleSet, self.letter = "", "" #Used before generating a new Scramble
         scrambleText.config(text = "")
@@ -52,7 +54,7 @@ class Scramble():
                 messagebox.showerror("Error!", "Error Occured when genereating a scramble: " + e)
         
         else:
-            #repeated syntax
+            #repeated syntax but used for only a 1D array
             while len(self.scrambleSet) < length: #Needed Assistance for setting the condition for the scramble to prevent repetitions of the same character
                 self.letter = random.choice(random.choices(choice, weights = map(len, choice))) #Doesn't use the [0] as only 1 array is used here
 
@@ -128,7 +130,7 @@ class Timer():
             timerText.config(text = timer_string)
             timerRunning = timerWindow.after(10, self.updateTime) #after 10 milliseconds
     
-    #Submits the time based on what is shown within the timer and ensures that the timer doesn't run when submitting times
+    #Submits the time based on what is shown within the timer and ensures that the timer doesn't run when submitting times (this is an inefficient function)
     def submission(self):
         if self.elapsed == str("DNF"):
             self.stringTime = "DNF"
@@ -136,6 +138,7 @@ class Timer():
             self.write_times_to_file()
             self.resetTime()
             scramble.updateScramble(puzzleChoice.get())
+            return
         
         elif self.elapsed == 0:
             messagebox.showwarning("Warning!", "Cannot submit the time when it hasn't started yet!")
@@ -149,6 +152,7 @@ class Timer():
             self.write_times_to_file()
             self.resetTime()
             scramble.updateScramble(puzzleChoice.get())
+            return
     
     def write_times_to_file(self):
         count = 0
@@ -181,6 +185,7 @@ class Timer():
         except FileNotFoundError:
             messagebox.showerror("Error!", "Cannot find file!")
     
+    #Reloads the specified file that the user chooses to upload their session
     def reload_file(self):
         with open(filepath, "r") as file:
             reader = csv.reader(file)
@@ -203,11 +208,12 @@ class Timer():
             second = int(seconds)
             milliesecond = (seconds - second) * 1000
             total = (hour * 3600) + (mins * 60) + (second + milliesecond / 1000)
-            return timedelta(seconds=total) #returns the total time within the specific format
+            return timedelta(seconds = total) #returns the total time within the specific format
         
         except ValueError:
             return timedelta(seconds = 0) #In case of errors
-        
+    
+    #3 Functions that are used to detect either penalties or if its a good solve
     def plusTwo(self):
         if self.millieseconds > 0 and self.elapsed != str("DNF") and (self.elapsed - self.defaultTime != 2):
             self.elapsed += 2
@@ -231,6 +237,7 @@ class Timer():
         
         return self.elapsed
     
+    #Calculates the mean of the session
     def calculateMean(self):
         self.total, self.did_not_finish_counter = 0.0, 0
         self.validTimes = []
@@ -248,20 +255,19 @@ class Timer():
             else:
                 self.did_not_finish_counter += 1
         
-        best_times = self.best_and_worst_times()
+        best_times = self.best_and_worst_times() #retrieves a tuple returning best and worst times
         
-        #Not the best way but retrieves all the times as a string which will fail but its safe
-        bestTime.config(text = "Best: " + str(best_times[1]))
-        worstTime.config(text = "Worst: " + str(best_times[0]))
         validity = (len(self.timerList) - self.did_not_finish_counter)
         
-        if validity == 0:
+        if validity <= 0:
             return 0
         
         else:
+            bestTime.config(text = "Best: " + str(best_times[1]))
+            worstTime.config(text = "Worst: " + str(best_times[0]))
             return self.total / validity
         
-       #Calculating the Standard Deviation based on the number of solves per session
+    #Calculating the Standard Deviation based on the number of solves per session
     def calcuate_standard_deviation(self):
         self.total = 0.0
         self.validTimes = []
@@ -345,7 +351,7 @@ class Timer():
     #Created with assistance for calcuating and updating the mean time
     def update_mean_time(self):
         self.currentMean = round(self.calculateMean(), 2)
-        self.standardDeviation = round(self.calcuate_standard_deviation(self.currentMean), 2)
+        self.standardDeviation = round(self.calcuate_standard_deviation(), 2)
         
         if self.currentMean <= self.bestMean and self.currentMean != 0.0:
             self.bestMean = self.currentMean
@@ -433,9 +439,10 @@ def colourChooser(type, window):
     
 #Function provided to transfer between 2 different screens and to cancel the after once the timer is running  
 def transferScreen(currentWindow, newWindow):
-    if "dummyTimes.csv" in filepath: 
-        with open(filepath, "w") as file:
-            file.write("")
+    global filepath
+    filepath = "dummyTimes.csv" #Dummy file for default times
+    with open(filepath, "w") as file:
+        file.write("")
         
     global timerRunning
     if timerRunning is not None:
@@ -446,10 +453,11 @@ def transferScreen(currentWindow, newWindow):
  
 #Refreshing the same screen each time the user wants to refresh the screen   
 def refreshScreen(currentWindow, sameWindow):
-    if "dummyTimes.csv" in filepath: 
-        with open(filepath, "w") as file:
-            file.write("")
-
+    global filepath
+    filepath = "dummyTimes.csv" #Dummy file for default times
+    with open(filepath, "w") as file:
+        file.write("")
+    
     global timerRunning
     if timerRunning is not None:
         currentWindow.after_cancel(timerRunning)
@@ -457,9 +465,6 @@ def refreshScreen(currentWindow, sameWindow):
     scramble.scrambleSet = None
     currentWindow.destroy()
     sameWindow()
-    
-    #Created with assistance
-    timer.reload_file()
 
 #Displays the font if the user is interested to know the kind of font that the user is currently using
 def showFont(scramble, timer, stat):
@@ -650,4 +655,3 @@ scramble, timer = Scramble(), Timer()
 
 timerWindow = timer_page()
 timerWindow.mainloop()
-
