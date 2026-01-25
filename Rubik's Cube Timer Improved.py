@@ -586,7 +586,7 @@ def timer_page():
     table["columns"] = columns = ("Time", "Scramble", "Date and Time", "Puzzle Type")
     
     statsFrame = Frame(timerWindow)
-    numSolves = Label(statsFrame, text = "Number of Solves: ", font = (statFont, 10, "bold"), highlightbackground = "black", highlightthickness = 2)
+    numSolves = Label(statsFrame, text = "Completed Number of Solves: ", font = (statFont, 10, "bold"), highlightbackground = "black", highlightthickness = 2)
     numFails = Label(statsFrame, text = "Number of DNFs: ", font = (statFont, 10, "bold"), highlightbackground = "black", highlightthickness = 2)
     currentMean = Label(statsFrame, text = "Current Mean: ", font = (statFont, 10, "bold"), highlightbackground = "black", highlightthickness = 2)
     bestMean = Label(statsFrame, text = "Best Mean: ", font = (statFont, 10, "bold"), highlightbackground = "black", highlightthickness = 2)
