@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 
 timerRunning = None
 filepath = "dummyTimes.csv" #Dummy file for default times
-#test
 
 #Clears the entire file before loading
 with open(filepath, "w") as file:
