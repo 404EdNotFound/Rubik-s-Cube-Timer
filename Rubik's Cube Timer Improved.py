@@ -1,4 +1,5 @@
 #Modules are imported here
+from email.policy import default
 from tkinter import *
 from tkinter import ttk, messagebox, colorchooser
 from tkinter.filedialog import askopenfilename, asksaveasfilename
@@ -61,6 +62,8 @@ class Scramble():
                 if not self.scrambleSet or self.letter[0] != self.scrambleSet.split()[-1][0]: #Need to ensure that the notation works perfectly similar to backtracking algorithm (not a perfect demonstration), makes sure that the notation only comes from the scrambleset
                     self.scrambleSet = self.scrambleSet + " " + self.letter
                     scrambleText.config(text = self.scrambleSet, wraplength = 500, justify = CENTER)
+        
+        return self.scrambleSet
 
     #Updates the scramble each time (hopefully change this to run efficiently)
     def updateScramble(self, puzzleType):
@@ -69,7 +72,6 @@ class Scramble():
         if key in self.SCRAMBLE_CONFIGURE_LIST:
             self.lengthValue, self.choice = self.SCRAMBLE_CONFIGURE_LIST[key] #Gets the attribute based on the key and uses this key to access the dictionary if stored
             self.scrambleSet = self.scrambleGenerator(self.lengthValue, self.choice, puzzleType)
-            scrambleText.config(text = self.scrambleSet)
             timer.resetTime()
         
         else:
@@ -80,8 +82,8 @@ class Scramble():
 #Creates a class for controlling the timer within the system           
 class Timer():
     def __init__(self):
-        self.start = self.elapsed = self.defaultTime = self.date = self.hours = self.minutes = self.did_not_finish_counter = 0
-        self.currentMean = self.currentAverage = self.seconds = self.millieseconds = self.total = self.standardDeviation = 0.0 #Defined as their specified data types wherever possible
+        self.start = self.date = self.hours = self.minutes = self.seconds = self.did_not_finish_counter = 0
+        self.currentMean = self.currentAverage = self.elapsed = self.defaultTime = self.millieseconds = self.total = self.standardDeviation = 0.0 #Defined as their specified data types wherever possible
         self.bestMean = self.bestAverage_5 = self.bestAverage_12 = float('inf')
         self.stringTime = "" #Converts the time into string
         self.dateFormat = "%d/%m/%Y %H:%M:%S"
@@ -132,27 +134,25 @@ class Timer():
     
     #Submits the time based on what is shown within the timer and ensures that the timer doesn't run when submitting times (this is an inefficient function)
     def submission(self):
-        if self.elapsed == str("DNF"):
+        if self.elapsed == "DNF":
             self.stringTime = "DNF"
-            self.date = str((datetime.now()).strftime(self.dateFormat))
-            self.write_times_to_file()
-            self.resetTime()
-            scramble.updateScramble(puzzleChoice.get())
-            return
         
         elif self.elapsed == 0:
             messagebox.showwarning("Warning!", "Cannot submit the time when it hasn't started yet!")
+            return
         
         elif self.elapsed > 0 and self.running:
             messagebox.showwarning("Error!", "Do not submit a time whilst the timer is running!")
+            return
             
         else:
             self.stringTime = timerText.cget("text") #retrives the text character
-            self.date = str((datetime.now()).strftime(self.dateFormat)) #Uses a datetime format to display the contents of the time
-            self.write_times_to_file()
-            self.resetTime()
-            scramble.updateScramble(puzzleChoice.get())
-            return
+            
+        self.date = str((datetime.now()).strftime(self.dateFormat))
+        self.write_times_to_file()
+        self.resetTime()
+        scramble.updateScramble(puzzleChoice.get())
+        return
     
     def write_times_to_file(self):
         count = 0
@@ -215,7 +215,7 @@ class Timer():
     
     #3 Functions that are used to detect either penalties or if its a good solve
     def plusTwo(self):
-        if self.millieseconds > 0 and self.elapsed != str("DNF") and (self.elapsed - self.defaultTime != 2):
+        if self.defaultTime > 0 and self.elapsed != str("DNF") and (self.elapsed - self.defaultTime != 2):
             self.elapsed += 2
             self.updateTime()
         
@@ -228,6 +228,7 @@ class Timer():
         if self.elapsed != 0 and not self.running:
             self.elapsed = str("DNF")
             timerText.config(text = "DNF")
+            self.updateTime()
         
         return self.elapsed
     
@@ -255,16 +256,12 @@ class Timer():
             else:
                 self.did_not_finish_counter += 1
         
-        best_times = self.best_and_worst_times() #retrieves a tuple returning best and worst times
-        
         validity = (len(self.timerList) - self.did_not_finish_counter)
         
         if validity <= 0:
             return 0
         
         else:
-            bestTime.config(text = "Best: " + str(best_times[1]))
-            worstTime.config(text = "Worst: " + str(best_times[0]))
             return self.total / validity
         
     #Calculating the Standard Deviation based on the number of solves per session
@@ -343,7 +340,11 @@ class Timer():
         else:
             format_time = f"{int(seconds):02}.{millieseconds:02}"
         
+        best_times = self.best_and_worst_times() #retrieves a tuple returning best and worst times
+        
         label.config(text = type_of_stat + format_time)
+        bestTime.config(text = "Best: " + str(best_times[1]))
+        worstTime.config(text = "Worst: " + str(best_times[0]))
         numSolves.config(text = "Number of Completed solves: " + str(len(self.timerList) - self.did_not_finish_counter))
         numFails.config(text = "Number of DNFs: " + str(self.did_not_finish_counter))
         standard_deviation.config(text = "Standard Deviation: " + str(self.standardDeviation))
@@ -523,7 +524,7 @@ def rule_page():
     ruleFrame = Frame(ruleWindow, background = "white")
     
     ruleHeading = Label(ruleFrame, background = "white", foreground = "black", text = "Rules to Follow for the Rubiks Cube Timer!!!", font = ("Arial", 40, "bold", "underline"))
-    ruleText = Label(ruleFrame, background = "white", foreground = "black", text = "Please read all rules below before using the timer! \n When generating a scramble, press either the 'Generate Scramble' button or the Enter Key \n Hand Options are available only for 2x2, this is your preference whether you want to use either RUF or LUF moves in your scrambles! \n The Scrambles are all Computer-Generated Sequences to scramble the cube, please scramble with White on Top and Green facing you! \n Start the timer by pressing the spacebar when you are ready to solve, DO NOT hold the spacebar as pressing and holding can cause confusion! \n Reset the timer with the R or Escape key. \n The System includes Penalties including the Plus 2 and DNFs. \n Please input them accordingly and ensure that you do it safely as this is irreversible like most diagnoses and prescription medicines!!! \n Be Careful, once you set it, you cannot set it back to the original time! \n Only 1 plus 2 is used (instead of stacking it up) \n Try not to intentionally get a bad solve all the time! \n Currently this Software is written in Python with the Tkinter Module and is still in development! \n Have Fun Timing and Solving! \n This is just a developing and improving version, there is an old version which doesn't have all features but still fun to use as a basic interface \n Thank You! press the 'OK' Button when you're ready to time solves!", font = ("Comic Sans Ms", 15, "bold"))
+    ruleText = Label(ruleFrame, background = "white", foreground = "black", text = "Please read all rules below before using the timer! \n When generating a scramble, press either the 'Generate Scramble' button or the Enter Key \n Hand Options are available only for 2x2, this is your preference whether you want to use either RUF or LUF moves in your scrambles! \n The Scrambles are all Computer-Generated Sequences to scramble the cube, please scramble with White on Top and Green facing you! \n Start the timer by pressing the spacebar when you are ready to solve, DO NOT hold the spacebar as pressing and holding can cause confusion! \n Reset the timer with the R or Escape key. \n The System includes Penalties including the Plus 2 and DNFs. \n Please input them accordingly and ensure that you do it safely as this is irreversible!!! \n Be Careful, once you set it, you cannot set it back to the original time! \n Only 1 plus 2 is used (instead of stacking it up) \n Try not to intentionally get a bad solve all the time! \n Currently this Software is written in Python with the Tkinter Module and is still in development! \n Have Fun Timing and Solving! \n This is just a developing and improving version, there is an old version which doesn't have all features but still fun to use as a basic interface \n Thank You! press the 'OK' Button when you're ready to time solves!", font = ("Comic Sans Ms", 15, "bold"))
     
     buttonFrame = Frame(ruleWindow)
     timerButton = Button(buttonFrame, text = "Ok", command = lambda: transferScreen(ruleWindow, timer_page))
