@@ -1,5 +1,5 @@
 #Modules are imported here
-from email.policy import default
+
 from tkinter import *
 from tkinter import ttk, messagebox, colorchooser
 from tkinter.filedialog import askopenfilename, asksaveasfilename
