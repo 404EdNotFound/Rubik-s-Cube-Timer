@@ -1,5 +1,4 @@
 #Modules are imported here
-
 from tkinter import *
 from tkinter import ttk, messagebox, colorchooser
 from tkinter.filedialog import askopenfilename, asksaveasfilename
@@ -326,10 +325,10 @@ class Timer():
     
     #Needed Help for conversion
     def update_display_stat(self, stat, label, type_of_stat, type):
-        type = f"{"Average" if type == "average" else "Mean"}"
+        type = f"Average" if type == "average" else "Mean"
         hours, minutes, seconds, millieseconds = self.convert_stat_time(stat)
         format_time = ""
-        type_of_stat = f"{"Best" if type_of_stat == "best" else "Current"}" + " " + type + ": "
+        type_of_stat = f"Best" if type_of_stat == "best" else "Current" + " " + type + ": "
         
         if hours > 0:
             format_time = f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}.{millieseconds:02}"
@@ -340,14 +339,15 @@ class Timer():
         else:
             format_time = f"{int(seconds):02}.{millieseconds:02}"
         
-        best_times = self.best_and_worst_times() #retrieves a tuple returning best and worst times
-        
         label.config(text = type_of_stat + format_time)
-        bestTime.config(text = "Best: " + str(best_times[1]))
-        worstTime.config(text = "Worst: " + str(best_times[0]))
         numSolves.config(text = "Number of Completed solves: " + str(len(self.timerList) - self.did_not_finish_counter))
         numFails.config(text = "Number of DNFs: " + str(self.did_not_finish_counter))
         standard_deviation.config(text = "Standard Deviation: " + str(self.standardDeviation))
+    
+    def update_best_and_worst_time_display(self):
+        best_worst_times = self.best_and_worst_times()
+        bestTime.config(text = "Best: " + str(best_worst_times[1]))
+        worstTime.config(text = "Worst: " + str(best_worst_times[0]))
     
     #Needed Help for calcuating and updating the mean time
     def update_mean_time(self):
@@ -357,7 +357,8 @@ class Timer():
         if self.currentMean <= self.bestMean and self.currentMean != 0.0:
             self.bestMean = self.currentMean
             self.update_display_stat(self.bestMean, bestMean, "best", "mean")
-            
+        
+        self.update_best_and_worst_time_display()
         self.update_display_stat(self.currentMean, currentMean, "current", "mean")
     
     def update_average_time(self, number):
@@ -366,7 +367,7 @@ class Timer():
         #Needed Help (used to update the interface when it reaches the desired number of solves)
         
         #Doesn't update average based on the number set by the parameter "number"
-        if len(self.timerList) < number:
+        if len(self.timerList) != number:
             return
         
         currentLabel = current_average_5 if number == 5 else current_average_12
@@ -393,7 +394,7 @@ class Timer():
             return maximum, minimum
         
         if len(self.validTimes) <= 4:
-            return None
+            return (None, None)
 
 #This is a sort example that will subject to change or stay the same, this makes use of the lambda function that is used to sort such relevant data, this uses a complex algorithm that is like Insertion Sort but also incorperates the idea of sorting into different fields that are chosen by the user in Ascending and Descending Order, needed help with this
 def sortFunction(tree, column, descending):
@@ -422,7 +423,7 @@ def keyFunctions(event):
     elif event.keysym in ["R", "r", "Escape"]:
         timer.resetTime()
     
-    elif event.keysym == "Return" and not timer.running: #Different to not timer.running which affects if the timer is running
+    elif (event.keysym == "Return") and (not timer.running) and (timer.elapsed <= 0): #Different to not timer.running which affects if the timer is running
         scramble.updateScramble(puzzleChoice.get())
 
 #Used to ask which colour is required here
