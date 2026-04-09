@@ -15,6 +15,7 @@ Preferably Later Versions of Python is recommended but you may need to install p
 * Stats for Solve Count, Mean, Standard Deviation and Average per session
 * Random Font Generation
 * Customisable Background and Foreground (based on users choice but used every time a user opens the screen)
+* Still has Errors but not stuff that breaks runtime
 
 ## Remixing Ethically: A Note from the Author
 This code is licensed under the MIT License to ensure compatibility with GitHub’s systems.
