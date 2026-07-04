@@ -27,7 +27,7 @@ class Scramble():
     
     #Defined as a dictionary with keys and values (had help with cleaning up the code)
     SCRAMBLE_CONFIGURE_LIST = {
-    "3x3": (50, NOTATION), "3x3 One Handed": (50, NOTATION), "3x3 Blindfolded": (50, NOTATION), "2x2_L": (25, LEFT_HANDED), "2x2_R": (25, RIGHT_HANDED), "4x4": (95, (NOTATION, WIDE_NOTATION)), "Pyraminx": (25, PYRA_NOTATION), "Skewb": (25, SKEWB_NOTATION)
+    "3x3": (50, NOTATION), "3x3 One Handed": (50, NOTATION), "3x3 Blindfolded": (50, NOTATION), "2x2_Left_Handed": (25, LEFT_HANDED), "2x2_Right_Handed": (25, RIGHT_HANDED), "4x4": (95, (NOTATION, WIDE_NOTATION)), "Pyraminx": (25, PYRA_NOTATION), "Skewb": (25, SKEWB_NOTATION)
     }
     
     def __init__(self):
@@ -67,7 +67,8 @@ class Scramble():
     #Updates the scramble each time (hopefully change this to run efficiently)
     def updateScramble(self, puzzleType):
         #Needed Help for setting keys for dictionaries
-        key = puzzleType if puzzleType != "2x2" else f"2x2_{handChoice.get()[0]}" #assigns a key to the dictionary based on the choices
+    
+        key = puzzleType if puzzleType != "2x2" else f"2x2_{handChoice.get()}" #assigns a key to the dictionary based on the choices
         if key in self.SCRAMBLE_CONFIGURE_LIST:
             self.lengthValue, self.choice = self.SCRAMBLE_CONFIGURE_LIST[key] #Gets the attribute based on the key and uses this key to access the dictionary if stored
             self.scrambleSet = self.scrambleGenerator(self.lengthValue, self.choice, puzzleType)
@@ -328,7 +329,9 @@ class Timer():
         type = f"Average" if type == "average" else "Mean"
         hours, minutes, seconds, millieseconds = self.convert_stat_time(stat)
         format_time = ""
-        type_of_stat = f"Best" if type_of_stat == "best" else "Current" + " " + type + ": "
+        type_of_stat = f"Best" if type_of_stat == "best" else "Current"
+        
+        formattedString = type_of_stat + " " + type + ":" + " "
         
         if hours > 0:
             format_time = f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}.{millieseconds:02}"
@@ -339,7 +342,7 @@ class Timer():
         else:
             format_time = f"{int(seconds):02}.{millieseconds:02}"
         
-        label.config(text = type_of_stat + format_time)
+        label.config(text = formattedString + format_time)
         numSolves.config(text = "Number of Completed solves: " + str(len(self.timerList) - self.did_not_finish_counter))
         numFails.config(text = "Number of DNFs: " + str(self.did_not_finish_counter))
         standard_deviation.config(text = "Standard Deviation: " + str(self.standardDeviation))
@@ -367,7 +370,7 @@ class Timer():
         #Needed Help (used to update the interface when it reaches the desired number of solves)
         
         #Doesn't update average based on the number set by the parameter "number"
-        if len(self.timerList) != number:
+        if len(self.timerList[-number:]) != number:
             return
         
         currentLabel = current_average_5 if number == 5 else current_average_12
@@ -572,7 +575,7 @@ def timer_page():
     option = OptionMenu(optionFrame, puzzleChoice, "2x2", "3x3", "3x3 One Handed", "3x3 Blindfolded", "4x4", "Pyraminx", "Skewb")
     
     handChoice = StringVar()
-    handOption = OptionMenu(optionFrame, handChoice, "Left Handed", "Right Handed")
+    handOption = OptionMenu(optionFrame, handChoice, "Left_Handed", "Right_Handed")
     
     buttonFrame = Frame(timerWindow, highlightbackground = "black", highlightthickness = 2)
     ruleButton = Button(buttonFrame, text = "View Rules", command = lambda: transferScreen(timerWindow, rule_page))
